@@ -56,6 +56,12 @@ ALL_OBJECTS := $(PhysiCell_OBJECTS) $(PhysiCell_custom_module_OBJECTS)
 all: main.cpp $(ALL_OBJECTS)
 	$(COMPILE_COMMAND) -o $(PROGRAM_NAME) $(ALL_OBJECTS) main.cpp 
 
+install: all
+	cp $(PROGRAM_NAME) ../bin
+
+distclean: clean
+	rm -f ../bin/$(PROGRAM_NAME)
+
 # PhysiCell core components	
 
 PhysiCell_phenotype.o: ./core/PhysiCell_phenotype.cpp
@@ -150,7 +156,8 @@ reset:
 	
 clean:
 	rm -f *.o
-	rm -f $(PROGRAM_NAME)*
+#	rm -f $(PROGRAM_NAME)*
+	rm -f $(PROGRAM_NAME)
 	
 data-cleanup:
 	rm -f *.mat

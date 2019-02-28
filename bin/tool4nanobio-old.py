@@ -6,7 +6,6 @@ import shutil
 import math
 import datetime
 import tempfile
-import subprocess
 from config import ConfigTab
 from user_params import UserTab
 from svg import SVGTab
@@ -15,18 +14,13 @@ from pathlib import Path
 from debug import debug_view
 import platform
 
-hublib_flag = False
-exec_file = os.path.join(os.getcwd(), "bin", "myproj")
+hublib_flag = True
 if platform.system() != 'Windows':
     try:
 #        print("Trying to import hublib.ui")
         from hublib.ui import RunCommand, Submit
-        hublib_flag = True
     except:
         hublib_flag = False
-else:
-    exec_file = os.path.join(os.getcwd(), "bin", "myproj.exe")
-print("exec_file = ",exec_file)
 
 
 # join_our_list = "(Join/ask questions at https://groups.google.com/forum/#!forum/physicell-users)\n"
@@ -42,15 +36,15 @@ config_tab = ConfigTab()
 xml_file = os.path.join('data', 'PhysiCell_settings.xml')
 full_xml_filename = os.path.abspath(xml_file)
 
-nanoHUB_flag = False
-if( 'HOME' in os.environ.keys() ):
-    nanoHUB_flag = "home/nanohub" in os.environ['HOME']
-
 tree = ET.parse(full_xml_filename)  # this file cannot be overwritten; part of tool distro
 xml_root = tree.getroot()
 user_tab = UserTab()
-svg = SVGTab(nanoHUB_flag)
-sub = SubstrateTab(nanoHUB_flag)
+svg = SVGTab()
+sub = SubstrateTab()
+
+nanoHUB_flag = False
+if( 'HOME' in os.environ.keys() ):
+    nanoHUB_flag = "home/nanohub" in os.environ['HOME']
 
 
 def read_config_cb(_b):
@@ -109,8 +103,8 @@ def write_config_file(name):
 
 # callback from write_config_button
 def write_config_file_cb(b):
-#    dirname = os.path.expanduser('~/.local/share/ise_proj1')  # does Windows like this?
-    path_to_share = os.path.join('~', '.local','share','ise_proj1')
+#    dirname = os.path.expanduser('~/.local/share/tool4ise')  # does Windows like this?
+    path_to_share = os.path.join('~', '.local','share','tool4ise')
     dirname = os.path.expanduser(path_to_share)
 
     val = write_config_box.value
@@ -126,8 +120,8 @@ def get_config_files():
 #    cf = {'DEFAULT': os.path.abspath('data/PhysiCell_settings.xml')}  # does Windows like this?
 #    cf = {'DEFAULT': os.path.abspath(xml_file)}
     cf = {'DEFAULT': full_xml_filename}
-#    dirname = os.path.expanduser('~/.local/share/ise_proj1')  # does Windows like this?
-    path_to_share = os.path.join('~', '.local','share','ise_proj1')
+#    dirname = os.path.expanduser('~/.local/share/tool4ise')  # does Windows like this?
+    path_to_share = os.path.join('~', '.local','share','tool4ise')
     dirname = os.path.expanduser(path_to_share)
     try:
         os.makedirs(dirname)
@@ -139,14 +133,14 @@ def get_config_files():
 
     # Find the dir path (full_path) to the cached dirs
     if nanoHUB_flag:
-        full_path = os.path.expanduser("~/data/results/.submit_cache/ise_proj1")  # does Windows like this?
+        full_path = os.path.expanduser("~/data/results/.submit_cache/tool4ise")  # does Windows like this?
     else:
         # local cache
         try:
             cachedir = os.environ['CACHEDIR']
-            full_path = os.path.join(cachedir, "ise_proj1")
+            full_path = os.path.join(cachedir, "tool4ise")
         except:
-            print("Exception in get_config_files: env var CACHEDIR not set.")
+            print("Exception in get_config_files")
             return cf
 
     # Put all those cached (full) dirs into a list
@@ -187,7 +181,7 @@ def run_done_func(s, rdir):
     
     if nanoHUB_flag:
         # Email the user that their job has completed
-        os.system("submit  mail2self -s 'nanoHUB ise_proj1' -t 'Your Run completed.'&")
+        os.system("submit  mail2self -s 'nanoHUB tool4ise' -t 'Your Run completed.'&")
 
     # save the config file to the cache directory
     shutil.copy('config.xml', rdir)
@@ -209,7 +203,7 @@ def run_done_func(s, rdir):
     #     print('RDF DONE')
 
 
-# This is used now for the (smart) RunCommand
+# This is used now for the RunCommand
 def run_sim_func(s):
     # with debug_view:
     #     print('run_sim_func')
@@ -240,7 +234,7 @@ def run_sim_func(s):
 
     if nanoHUB_flag:
         if remote_cb.value:
-            s.run(run_name, "-v ncn-hub_M@brown -n 8 -w 1440 ise_proj1-r7 config.xml")   # "-r7" suffix??
+            s.run(run_name, "-v ncn-hub_M@brown -n 8 -w 1440 tool4ise-r7 config.xml")   # "-r7" suffix??
         else:
             # read_config.index = 0   # reset Dropdown 'Load Config' to 'DEFAULT' when Run interactively
             s.run(run_name, "--local ../bin/myproj config.xml")
@@ -263,13 +257,10 @@ def outcb(s):
         sub.update('')
     return s
 
-# Callback for the "dumb" Run button (without hublib.ui)
+# Callback for the (dumb) 'Run' button (without hublib.ui)
 def run_button_cb(s):
 #    with debug_view:
 #        print('run_button_cb')
-
-    # os.chdir(homedir)  # /tmpdir
-    os.chdir( os.path.join(homedir, output_dir) )
 
 #    new_config_file = "config.xml"
     new_config_file = full_xml_filename
@@ -277,29 +268,23 @@ def run_button_cb(s):
 #    subprocess.call(["biorobots", xml_file_out])
 #    subprocess.call(["myproj", new_config_file])   # spews to shell, but not ctl-C'able
 #    subprocess.call(["myproj", new_config_file], shell=True)  # no
-#    print("cwd = ", os.getcwd() )
-#    print("exec_file = ",exec_file)
-    if os.path.isfile(exec_file):
-        subprocess.Popen([exec_file, new_config_file])
-    else:
-        print("'myproj' executable missing from /bin directory")
-
+    subprocess.Popen(["myproj", new_config_file])
 
 if nanoHUB_flag:
     run_button = Submit(label='Run',
                        start_func=run_sim_func,
                         done_func=run_done_func,
-                        cachename='ise_proj1',
+                        cachename='tool4ise',
                         showcache=False,
                         outcb=outcb)
 else:
     if (hublib_flag):
         run_button = RunCommand(start_func=run_sim_func,
                             done_func=run_done_func,
-                            cachename='ise_proj1',
+                            cachename='tool4ise',
                             showcache=False,
                             outcb=outcb)  
-    else:  # "dumb" Run button
+    else:
         run_button = widgets.Button(
             description='Run',
             button_style='success',  # 'success', 'info', 'warning', 'danger' or ''
@@ -346,22 +331,14 @@ if nanoHUB_flag:
 else:
     #gui = widgets.VBox(children=[read_config, tabs, write_config_row, run_button.w])
     #gui = widgets.VBox(children=[read_config, tabs, run_button.w])
-    if (hublib_flag):
-        gui = widgets.VBox(children=[tabs, run_button.w])
-    else:
-        gui = widgets.VBox(children=[tabs, run_button])
-
+    gui = widgets.VBox(children=[tabs, run_button.w])
 fill_gui_params(read_config.options['DEFAULT'])
 
 # pass in (relative) directory where output data is located
 #svg.update(read_config.value)
 #output_dir = "output"
 output_dir = "tmpdir"
-output_dir = os.getcwd()
-output_dir = os.path.join(os.getcwd(), "tmpdir")
 svg.update(output_dir)
 #sub.update_dropdown_fields(output_dir)
-# sub.update_dropdown_fields("data")
-data_dir = os.path.join(os.getcwd(), "data")
-sub.update_dropdown_fields(data_dir)
+sub.update_dropdown_fields("data")
 sub.update(output_dir)

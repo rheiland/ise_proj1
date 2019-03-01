@@ -1,5 +1,5 @@
 VERSION := $(shell grep . VERSION.txt | cut -f1 -d:)
-PROGRAM_NAME := heterogeneity
+PROGRAM_NAME := myproj
 
 CC := g++
 # CC := g++-mp-7 # typical macports compiler name
@@ -148,9 +148,15 @@ reset:
 	cp ./config/PhysiCell_settings_default.xml ./config/PhysiCell_settings.xml 
 	touch ./config/empty.txt
 	
+install: all
+	cp $(PROGRAM_NAME) ../bin
+
+distclean: clean
+	rm -f ../bin/$(PROGRAM_NAME)
+
 clean:
 	rm -f *.o
-	rm -f $(PROGRAM_NAME)*
+	rm -f $(PROGRAM_NAME)
 	
 data-cleanup:
 	rm -f *.mat
